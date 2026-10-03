@@ -57,7 +57,7 @@ services:
       - --host
       - 0.0.0.0
       - --allowed-hosts
-      - playwright:8931
+      - "*"
       - --output-dir
       - /workspace/test-results
     volumes:

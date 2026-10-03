@@ -15,6 +15,7 @@ RUN apk add --no-cache git ripgrep ca-certificates nodejs npm python3 py3-pip cu
     && adduser -D -u 10001 -h /home/opencode opencode \
     && mkdir -p /home/opencode/.config/opencode/agents \
                /home/opencode/.local/share/opencode \
+               /home/opencode/.local/tools \
                /home/opencode/.cache/opencode \
                /opt/discord-bot-mcp \
                /workspace \
@@ -31,8 +32,8 @@ ENV HOME=/home/opencode \
     XDG_DATA_HOME=/home/opencode/.local/share \
     XDG_CACHE_HOME=/home/opencode/.cache \
     BUN_RUNTIME_TRANSPILER_CACHE_PATH=0 \
-    NPM_CONFIG_PREFIX=/home/opencode/.local \
-    PATH=/home/opencode/.local/bin:$PATH
+    NPM_CONFIG_PREFIX=/home/opencode/.local/tools/npm \
+    PATH=/home/opencode/.local/tools/npm/bin:$PATH
 
 WORKDIR /workspace
 USER opencode

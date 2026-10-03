@@ -9,6 +9,8 @@ services:
     init: true
     ports:
       - "127.0.0.1:4096:4096"
+    env_file:
+      - .env
     environment:
       HOME: /home/opencode
       XDG_CONFIG_HOME: /home/opencode/.config
@@ -24,6 +26,7 @@ services:
       DISCORD_ALLOWED_CHANNEL_IDS: ${DISCORD_ALLOWED_CHANNEL_IDS:-}
     volumes:
       - ./workspace:/workspace
+      - opencode-config:/home/opencode/.config/opencode
       - opencode-data:/home/opencode/.local/share/opencode
       - opencode-cache:/home/opencode/.cache/opencode
       - opencode-tools:/home/opencode/.local/tools
@@ -65,6 +68,7 @@ services:
     stop_grace_period: 30s
 
 volumes:
+  opencode-config:
   opencode-data:
   opencode-cache:
   opencode-tools:

@@ -26,6 +26,7 @@ const stateTempPath = statePath + ".tmp";
 const state = { sessions: {} };
 const baseUrl = (process.env.OPENCODE_BASE_URL || "http://codingagent:4096").replace(/\/$/, "");
 const workspace = process.env.OPENCODE_WORKSPACE || "/workspace";
+const architectModel = { providerID: "openrouter", id: "anthropic/claude-sonnet-5" };
 const basicAuth = Buffer.from(
   process.env.OPENCODE_SERVER_USERNAME + ":" + process.env.OPENCODE_SERVER_PASSWORD,
 ).toString("base64");
@@ -69,6 +70,7 @@ async function sessionFor(channel) {
     body: JSON.stringify({
       title: "Discord #" + (channel.name || channel.id),
       agent: "architect",
+      model: architectModel,
       location: { directory: workspace },
     }),
   });
@@ -115,6 +117,11 @@ function createdAt(message) {
 }
 
 async function answerFor(sessionID, text) {
+  await api("/api/session/" + encodeURIComponent(sessionID) + "/model", {
+    method: "POST",
+    body: JSON.stringify({ model: architectModel }),
+  });
+
   const previousAssistantIDs = new Set(
     (await messagesFor(sessionID))
       .filter((message) => roleOf(message) === "assistant")

@@ -1,5 +1,6 @@
 {
   "$schema": "https://opencode.ai/config.json",
+  "model": "openrouter/anthropic/claude-sonnet-5",
   "default_agent": "architect",
   "plugins": [
     "superpowers@git+https://github.com/obra/superpowers.git"

@@ -26,6 +26,7 @@ services:
       - ./workspace:/workspace
       - opencode-data:/home/opencode/.local/share/opencode
       - opencode-cache:/home/opencode/.cache/opencode
+      - opencode-tools:/home/opencode/.local/tools
     tmpfs:
       - /tmp:rw,noexec,nosuid,size=256m
     cap_drop:
@@ -66,4 +67,5 @@ services:
 volumes:
   opencode-data:
   opencode-cache:
+  opencode-tools:
   discord-state:

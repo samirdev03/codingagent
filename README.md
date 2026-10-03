@@ -38,7 +38,11 @@ Connect an OpenCode client to http://localhost:4096. In Discord, send a message 
 
 ## Agent boundaries
 
-Architect can read the project and write only under docs/superpowers/specs/ and docs/superpowers/plans/. It cannot run shell commands or edit application files. Coder implements approved tasks in the workspace and reports verification results to Architect.
+Both agents can run shell commands inside the OpenCode container. Architect uses shell for inspection and environment setup; its instructions still reserve application implementation for Coder. Coder uses shell to install project dependencies, download tools, and run approved implementation and verification commands.
+
+The OpenCode container runs as the unprivileged `opencode` user, drops Linux capabilities, and has no Docker socket mount. npm global packages install under `/home/opencode/.local`; Python packages should be installed in a virtual environment. Shell commands cannot install OS packages at runtime because the agent is not root; add those to the Dockerfile and rebuild.
+
+OpenCode's edit permission rules do not constrain writes performed through shell commands. Architect is instructed not to edit application files, but that instruction is not a hard filesystem boundary while both agents share the writable workspace.
 
 ## Secrets and persistence
 

@@ -11,7 +11,7 @@ FROM ghcr.io/anomalyco/opencode:2.0.7
 
 USER root
 
-RUN apk add --no-cache git ripgrep ca-certificates nodejs npm python3 py3-pip curl wget \
+RUN apk add --no-cache git ripgrep ca-certificates nodejs npm python3 py3-pip curl wget github-cli \
     && adduser -D -u 10001 -h /home/opencode opencode \
     && mkdir -p /home/opencode/.config/opencode/agents \
                /home/opencode/.local/share/opencode \
@@ -33,6 +33,7 @@ ENV HOME=/home/opencode \
     XDG_CACHE_HOME=/home/opencode/.cache \
     BUN_RUNTIME_TRANSPILER_CACHE_PATH=0 \
     NPM_CONFIG_PREFIX=/home/opencode/.local/tools/npm \
+    NPM_CONFIG_CACHE=/home/opencode/.local/tools/npm-cache \
     PATH=/home/opencode/.local/tools/npm/bin:$PATH
 
 WORKDIR /workspace

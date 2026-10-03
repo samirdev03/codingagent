@@ -5,5 +5,24 @@
     "superpowers@git+https://github.com/obra/superpowers.git"
   ],
   "subagent_depth": 1,
-  "share": "disabled"
+  "share": "disabled",
+  "mcp": {
+    "servers": {
+      "discord": {
+        "type": "local",
+        "command": [
+          "node",
+          "/opt/discord-bot-mcp/dist/index.js"
+        ],
+        "environment": {
+          "DISCORD_BOT_TOKEN": "{env:DISCORD_BOT_TOKEN}",
+          "DISCORD_GUILD_ID": "{env:DISCORD_GUILD_ID}",
+          "DISCORD_ALLOW_WRITES": "{env:DISCORD_ALLOW_WRITES}",
+          "DISCORD_ALLOW_DESTRUCTIVE_ADMIN": "{env:DISCORD_ALLOW_DESTRUCTIVE_ADMIN}",
+          "DISCORD_ALLOWED_CHANNEL_IDS": "{env:DISCORD_ALLOWED_CHANNEL_IDS}"
+        },
+        "timeout": 30000
+      }
+    }
+  }
 }

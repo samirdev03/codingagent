@@ -1,6 +1,7 @@
 FROM node:22-alpine AS discord-mcp-build
 
-RUN npm install --global pnpm@10.15.1 \
+RUN apk add --no-cache git ca-certificates \
+    && npm install --global pnpm@10.15.1 \
     && git clone --depth 1 https://github.com/diocata/discord-bot-mcp.git /opt/discord-bot-mcp \
     && cd /opt/discord-bot-mcp \
     && pnpm install --frozen-lockfile \

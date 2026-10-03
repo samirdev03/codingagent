@@ -30,8 +30,37 @@ services:
       - opencode-data:/home/opencode/.local/share/opencode
       - opencode-cache:/home/opencode/.cache/opencode
       - opencode-tools:/home/opencode/.local/tools
+    depends_on:
+      - playwright
     tmpfs:
       - /tmp:rw,noexec,nosuid,size=256m
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    stop_grace_period: 30s
+
+  playwright:
+    image: mcr.microsoft.com/playwright/mcp
+    container_name: codingagent-playwright
+    restart: unless-stopped
+    init: true
+    entrypoint: ["node"]
+    command:
+      - /app/cli.js
+      - --headless
+      - --browser
+      - chromium
+      - --no-sandbox
+      - --port
+      - "8931"
+      - --host
+      - 0.0.0.0
+      - --output-dir
+      - /workspace/test-results
+    volumes:
+      - ./workspace:/workspace
+    shm_size: 1gb
     cap_drop:
       - ALL
     security_opt:

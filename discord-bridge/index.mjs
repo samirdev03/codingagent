@@ -79,25 +79,54 @@ async function sessionFor(channel) {
   return sessionID;
 }
 
-async function answerFor(sessionID, text) {
-  await api("/api/session/" + encodeURIComponent(sessionID) + "/prompt", {
-    method: "POST",
-    body: JSON.stringify({ text }),
-  });
-  await api("/api/experimental/session/" + encodeURIComponent(sessionID) + "/wait", {
-    method: "POST",
-  });
+async function messagesFor(sessionID) {
+  const result = await api("/api/session/" + encodeURIComponent(sessionID) + "/message?limit=50&order=desc");
+  if (Array.isArray(result?.data?.items)) return result.data.items;
+  if (Array.isArray(result?.data)) return result.data;
+  if (Array.isArray(result?.items)) return result.items;
+  return [];
+}
 
-  const result = await api("/api/session/" + encodeURIComponent(sessionID) + "/message?limit=30&order=desc");
-  const messages = result?.data?.items || result?.data || result?.items || [];
-  const assistant = messages.find((message) => message?.info?.role === "assistant");
-  const parts = assistant?.parts || [];
-  const answer = parts
+function textFrom(message) {
+  return (message?.parts || [])
     .filter((part) => part?.type === "text" && typeof part.text === "string")
     .map((part) => part.text)
     .join("\n")
     .trim();
-  return answer || "OpenCode hat den Auftrag verarbeitet, aber keine Textantwort zurückgegeben.";
+}
+
+async function answerFor(sessionID, text) {
+  const previousAssistantIDs = new Set(
+    (await messagesFor(sessionID))
+      .filter((message) => message?.info?.role === "assistant")
+      .map((message) => message.info.id)
+      .filter(Boolean),
+  );
+
+  await api("/api/session/" + encodeURIComponent(sessionID) + "/prompt", {
+    method: "POST",
+    body: JSON.stringify({ text }),
+  });
+
+  const deadline = Date.now() + 30 * 60 * 1000;
+  while (Date.now() < deadline) {
+    const messages = await messagesFor(sessionID);
+    const assistant = messages
+      .filter((message) =>
+        message?.info?.role === "assistant"
+        && message.info.finish
+        && !previousAssistantIDs.has(message.info.id)
+        && textFrom(message),
+      )
+      .sort((left, right) =>
+        Number(right.info?.time?.created || 0) - Number(left.info?.time?.created || 0),
+      )[0];
+
+    if (assistant) return textFrom(assistant);
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+  }
+
+  throw new Error("Timed out waiting for a completed OpenCode text response");
 }
 
 function splitDiscordMessage(text) {

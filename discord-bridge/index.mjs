@@ -86,7 +86,6 @@ async function answerFor(sessionID, text) {
   });
   await api("/api/experimental/session/" + encodeURIComponent(sessionID) + "/wait", {
     method: "POST",
-    body: "{}",
   });
 
   const result = await api("/api/session/" + encodeURIComponent(sessionID) + "/message?limit=30&order=desc");

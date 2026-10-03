@@ -87,19 +87,38 @@ async function messagesFor(sessionID) {
   return [];
 }
 
+function roleOf(message) {
+  return message?.info?.role
+    || message?.role
+    || (message?.type === "assistant" ? "assistant" : undefined);
+}
+
+function idOf(message) {
+  return message?.info?.id || message?.id;
+}
+
+function finishOf(message) {
+  return message?.info?.finish || message?.finish;
+}
+
 function textFrom(message) {
-  return (message?.parts || [])
+  const parts = Array.isArray(message?.content) ? message.content : message?.parts || [];
+  return parts
     .filter((part) => part?.type === "text" && typeof part.text === "string")
     .map((part) => part.text)
     .join("\n")
     .trim();
 }
 
+function createdAt(message) {
+  return Number(message?.info?.time?.created || message?.time?.created || 0);
+}
+
 async function answerFor(sessionID, text) {
   const previousAssistantIDs = new Set(
     (await messagesFor(sessionID))
-      .filter((message) => message?.info?.role === "assistant")
-      .map((message) => message.info.id)
+      .filter((message) => roleOf(message) === "assistant")
+      .map(idOf)
       .filter(Boolean),
   );
 
@@ -113,14 +132,12 @@ async function answerFor(sessionID, text) {
     const messages = await messagesFor(sessionID);
     const assistant = messages
       .filter((message) =>
-        message?.info?.role === "assistant"
-        && message.info.finish
-        && !previousAssistantIDs.has(message.info.id)
+        roleOf(message) === "assistant"
+        && finishOf(message)
+        && !previousAssistantIDs.has(idOf(message))
         && textFrom(message),
       )
-      .sort((left, right) =>
-        Number(right.info?.time?.created || 0) - Number(left.info?.time?.created || 0),
-      )[0];
+      .sort((left, right) => createdAt(right) - createdAt(left))[0];
 
     if (assistant) return textFrom(assistant);
     await new Promise((resolve) => setTimeout(resolve, 1000));

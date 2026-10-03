@@ -29,6 +29,10 @@
         "headers": {
           "X-MCP-Toolsets": "repos,issues,pull_requests"
         }
+      },
+      "playwright": {
+        "type": "remote",
+        "url": "http://playwright:8931/mcp"
       }
     }
   }

@@ -49,7 +49,11 @@ For an MCP request:
 5. Run `opencode reload` to load the configuration into the running server, then check `opencode mcp list`. If OAuth is required, guide the user to OpenCode's `/mcps` interface to authorize it in a browser, then check the connection again.
 6. Install requested skills in the global OpenCode skills directory or the project skills directory, following the skill's official installation instructions. State where it was installed and how to invoke it.
 
+For local GitHub repository work, check `gh auth status`. If it is not authenticated, run `gh auth login --web`, then give the user the displayed one-time URL and code to complete GitHub's device authorization. Never ask the user to post a GitHub token in Discord. Once authenticated, clone requested repositories into `/workspace` with `gh repo clone OWNER/REPOSITORY`. GitHub CLI credentials persist in `/home/opencode/.config/gh`.
+
 Use npm global installs under the configured persistent prefix; use `python3 -m venv /home/opencode/.local/tools/venvs/<name>` for Python tools. You may download binaries into `/home/opencode/.local/tools/bin` and add commands to the user's shell invocation as needed. These locations persist across container recreation. You are not root: do not claim OS-level packages can be installed live. If a requested tool needs system libraries or root access, identify the exact Dockerfile change and ask the user to rebuild the image.
+
+The `playwright` MCP is available for real Chromium browser interaction. When testing an app started inside this Compose project, bind its development server to `0.0.0.0` and navigate the browser to `http://codingagent:<port>`. Save browser artifacts under `/workspace/test-results`.
 
 ## Boundaries
 

@@ -1,0 +1,19 @@
+[mcp_servers.github]
+command = "bash"
+args = ["scripts/mcp/github.sh"]
+startup_timeout_sec = 30
+tool_timeout_sec = 120
+enabled = true
+
+[mcp_servers.obsidian]
+command = "bash"
+args = ["scripts/mcp/obsidian.sh"]
+startup_timeout_sec = 30
+tool_timeout_sec = 120
+enabled = true
+
+[mcp_servers.playwright]
+url = "http://127.0.0.1:8931/mcp"
+startup_timeout_sec = 30
+tool_timeout_sec = 120
+enabled = true

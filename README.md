@@ -1,63 +1,46 @@
-# CodingAgent
+# CodingAgent Remote Workspace
 
-A persistent OpenCode server configured with an Architect primary agent and a DeepSeek-powered Coder subagent. Architect uses Obra Superpowers to prepare a specification and implementation plan before delegating approved coding tasks.
+A Codex workspace for a Linux SSH server. Codex runs on the server host when the ChatGPT desktop app connects to it; Docker Compose keeps the Obsidian MCP vault service and headless Playwright MCP available. Codex also registers GitHub's official MCP server over stdio, supplied with the token from the server user's authenticated GitHub CLI. The workspace includes the MIT-licensed Obsidian Second Brain Agent Skills package.
 
-Discord is available in two ways: a bot bridge lets authorized Discord users chat with the Architect, and a Discord MCP server gives OpenCode tools to read and operate on the configured server. The official GitHub MCP provides repository, issue, and pull request tools. A separate Playwright container gives the agent a real headless Chromium browser for web application testing.
+This repository does not run ChatGPT Work or Codex inside Docker. The supported design uses Codex on the SSH host and the ChatGPT desktop app as the client. ChatGPT mobile's Remote tab can access supported desktop Codex chats; whether an SSH-hosted workspace appears there depends on the currently supported Remote connection flow. See [Remote setup](docs/REMOTE_SETUP.md).
 
-## Requirements
+## Quick setup
 
-- Docker Engine with the Compose plugin
-- An OpenRouter API key with access to Claude Sonnet 5 and DeepSeek V3
-- A Discord application and bot added to your private server
-- A fine-grained GitHub Personal Access Token scoped to the repositories the agent should use
+1. Prepare a Linux server with SSH access, Docker Engine plus Compose plugin, Git, and Node.js/npm.
+2. Clone this repository on the server and enter it:
 
-## Configure Discord and GitHub
+   ```sh
+git clone --branch feat/codex-remote-obsidian https://github.com/samirdev03/codingagent.git
+cd codingagent
+```
 
-1. In the Discord Developer Portal, create an application and add a bot.
-2. Under Bot > Privileged Gateway Intents, enable Message Content Intent. The bridge needs this to read messages in your configured channel.
-3. Under OAuth2 > URL Generator, select the bot scope and grant only View Channels, Read Message History, and Send Messages. Do not grant Administrator.
-4. Invite the bot to your server.
-5. In Discord, enable User Settings > Advanced > Developer Mode. Copy the server ID, a private channel ID, and your own user ID.
-6. Create a fine-grained GitHub PAT. Select only the repositories the agent should access; grant Metadata read-only, Contents read/write, and Issues and Pull requests read/write if needed.
-7. Copy .env.example to .env. Set the Discord and OpenRouter values, the OpenCode server password, and `GITHUB_PERSONAL_ACCESS_TOKEN`. Never send the GitHub token through Discord.
+3. Set the container UID/GID to the SSH user's IDs so the Obsidian MCP can write the mounted vault, then install Codex CLI:
 
-Messages from users or channels outside the configured allowlists are ignored. The bridge keeps one OpenCode conversation per Discord channel and saves the channel-to-session mapping in a Docker volume.
+   ```sh
+   cp .env.example .env
+   sed -i "s/^OBSIDIAN_UID=.*/OBSIDIAN_UID=$(id -u)/; s/^OBSIDIAN_GID=.*/OBSIDIAN_GID=$(id -g)/" .env
+   bash scripts/install-codex-host.sh
+   codex login
+   ```
 
-The Discord MCP integration is scoped to the configured server and allowed channels. MCP writes are disabled by default; set DISCORD_ALLOW_WRITES=true only if you want the Architect to perform ordinary Discord writes through MCP. Keep DISCORD_ALLOW_DESTRUCTIVE_ADMIN=false.
+4. Start the persistent MCP services:
 
-## Start
-
-1. Put or clone the target project into workspace/.
-2. Build and start the services:
-
+   ```sh
    docker compose up -d --build
+   ```
 
-The services restart automatically unless stopped manually. OpenCode listens on 127.0.0.1:4096 by default and requires HTTP Basic authentication using the username and password from .env. The Discord bridge and Playwright MCP communicate with OpenCode over the private Compose network; neither publishes a host port.
+5. Install GitHub CLI if needed and authenticate once with `gh auth login --hostname github.com --git-protocol https --web`. From the ChatGPT desktop app, connect to the server as an SSH host and open this repository as the workspace. Initialize the vault with the `obsidian-init` skill if desired.
 
-## Use Discord, GitHub, and the browser
+Read [Remote setup](docs/REMOTE_SETUP.md) before connecting and [Operations](docs/OPERATIONS.md) for restarts, backups, health checks, and updates.
 
-In Discord, send a message in an allowed channel or mention the bot. The bridge explicitly selects the `architect` agent and Claude Sonnet model for each message, then replies in the same channel.
+## Services and persistence
 
-The GitHub MCP is configured for repositories, issues, and pull requests. OpenCode's GitHub integration uses the PAT from `.env` (not the generic `/mcps` OAuth flow). After adding or changing the token, recreate the codingagent service. The same token is supplied to GitHub CLI so the agent can clone authorized repositories into `/workspace`.
+| Component | Runs where | Persistent data |
+| --- | --- | --- |
+| Codex CLI | Linux server host | Codex account state in the host user's Codex config |
+| GitHub MCP | Official Docker image, launched over stdio | GitHub CLI credential in the server user's home directory |
+| Obsidian MCP | Docker Compose | `obsidian-vault/` bind-mounted read/write at `/vault` |
+| Playwright MCP | Docker Compose, host port bound to loopback | test artifacts under `workspace/test-results/` |
+| Second Brain skills | Repository checkout | `.agents/skills/`, versioned and MIT-attributed |
 
-The Architect prepares a specification and implementation plan; review and explicitly approve those before it delegates bounded implementation tasks to coder.
-
-The `playwright` service runs Microsoft's Playwright MCP with headless Chromium. It shares `workspace/` for test artifacts under `workspace/test-results/`. To test an app in the codingagent container, start its development server bound to `0.0.0.0` on a port such as 3000; the browser can then reach it at `http://codingagent:3000`.
-
-## Agent setup abilities
-
-Both agents can run shell commands inside the OpenCode container. Architect can install requested npm tools, Python tools in virtual environments, standalone binaries, global skills, and MCP servers. Global MCP configuration and skills persist in Docker volumes. Run `opencode reload` after adding an MCP config so the running server connects it.
-
-When an MCP needs credentials, the Architect gives the exact variable name and where to add it. Do not paste secrets into Discord. Add them to the server's `.env` and recreate the affected service so the environment is refreshed. Local MCP processes should be launched with only the environment variables they need.
-
-npm global packages and their cache persist under `/home/opencode/.local/tools`. Python packages should be installed in virtual environments under that directory. Global OpenCode config and skills persist in the `opencode-config` volume; GitHub CLI credentials and OpenCode session data persist in `opencode-data`.
-
-## Agent boundaries
-
-The OpenCode container runs as the unprivileged `opencode` user, drops Linux capabilities, and has no Docker socket mount. The agents can change the OpenCode user's files, workspace, dependencies, skills, and persistent MCP configuration, and they can access the internet. They cannot install operating-system packages live or alter the Docker host. If a requested tool needs system libraries or root access, update the Dockerfile and rebuild the image.
-
-OpenCode's edit permission rules do not constrain writes performed through shell commands. Architect is instructed not to edit application files, but that instruction is not a hard filesystem boundary while both agents share the writable workspace.
-
-## Secrets and persistence
-
-The .env file is local and must not be committed. Keep API keys and bot credentials out of Discord messages, shell command arguments, and JSON configuration files. The workspace and all OpenCode data/config/tool caches persist independently in bind mounts or Docker volumes.
+No GitHub PAT file or Obsidian account is required by the default setup. GitHub CLI stores its login on the server and the MCP wrapper passes it only to the running container. Obsidian Sync is optional and configured in an Obsidian client, not this headless service. Keep `.env`, Codex auth data, and vault notes out of Git.

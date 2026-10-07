@@ -1,2 +1,14 @@
 .env
-workspace/
+.env.*
+!.env.example
+
+/workspace/*
+!/workspace/.gitkeep
+
+/obsidian-vault/*
+!/obsidian-vault/.obsidian/
+/obsidian-vault/.obsidian/*
+!/obsidian-vault/.obsidian/.gitkeep
+
+.codex/auth.json
+.superpowers/

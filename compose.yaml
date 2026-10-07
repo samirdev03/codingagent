@@ -24,7 +24,7 @@ services:
       retries: 3
 
   playwright:
-    image: mcr.microsoft.com/playwright/mcp:v0.0.83
+    image: mcr.microsoft.com/playwright/mcp:v0.0.82
     container_name: codingagent-playwright
     restart: unless-stopped
     init: true
